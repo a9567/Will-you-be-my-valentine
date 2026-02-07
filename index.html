@@ -423,8 +423,8 @@
     }
 
     .screen-celebration .thankyou-image {
-      width: 120px;
-      height: 120px;
+      width: 160px;
+      height: 160px;
       margin: 1rem auto;
       display: block;
       object-fit: cover;
@@ -607,16 +607,13 @@
     <section class="screen-celebration" id="celebration" aria-live="polite" aria-hidden="true">
       <div class="hearts-container" id="hearts-container"></div>
       <div class="content">
-        <div class="speech-bubble gift-message-bubble">
-          <p class="gift-message" id="gift-message"></p>
-        </div>
         <div class="speech-bubble">
           <h2>Happy Valentines day Renuma ❤️</h2>
         </div>
-        <img id="thankyou-image" src="v1.avif" alt="" class="thankyou-image" aria-hidden="true">
-        <div class="speech-bubble">
-          <p class="subtext">You just made my day!</p>
+        <div class="speech-bubble gift-message-bubble">
+          <p class="gift-message" id="gift-message"></p>
         </div>
+        <img id="thankyou-image" src="istockphoto-1438071959-612x612.jpg" alt="" class="thankyou-image" aria-hidden="true">
         <div class="speech-bubble">
           <p class="romantic-line">I'm the luckiest person to have you.</p>
         </div>
@@ -702,6 +699,12 @@
         "Sneham mathram (most recommended)",
         "How far will you go for love",
         "Eat 5-star do nothing."
+      ];
+
+      var GIFT_IMAGES = [
+        "img1.jpg",
+        "img2.jpg",
+        "img3.jpg"
       ];
 
       // ----- No button: random movement (never off-screen) -----
@@ -795,8 +798,9 @@
         }, { once: true });
       }
 
-      function showCelebrationWithMessage(message) {
+      function showCelebrationWithMessage(message, giftIndex) {
         if (giftMessageEl) giftMessageEl.textContent = message;
+        if (thankyouImage && GIFT_IMAGES[giftIndex]) thankyouImage.src = GIFT_IMAGES[giftIndex];
         giftsScreen.classList.remove("visible");
         giftsScreen.setAttribute("aria-hidden", "true");
         celebration.classList.add("visible");
@@ -810,7 +814,7 @@
         box.addEventListener("click", function () {
           var idx = parseInt(box.getAttribute("data-index"), 10);
           var msg = GIFT_MESSAGES[idx];
-          if (msg) showCelebrationWithMessage(msg);
+          if (msg) showCelebrationWithMessage(msg, idx);
         });
       });
 
@@ -830,7 +834,6 @@
       // restarts the same 10s flow. Each batch adds several hearts with random
       // position, delay, and drift; float-up keyframe moves them up and fades out.
 
-      var HEARTS_DURATION_MS = 10000;
       var HEARTS_INTERVAL_MS = 500;
       var HEARTS_PER_BATCH = 6;
       var heartsIntervalId = null;
@@ -860,12 +863,6 @@
         heartsContainer.innerHTML = "";
         addHeartBatch();
         heartsIntervalId = setInterval(addHeartBatch, HEARTS_INTERVAL_MS);
-        setTimeout(function () {
-          if (heartsIntervalId !== null) {
-            clearInterval(heartsIntervalId);
-            heartsIntervalId = null;
-          }
-        }, HEARTS_DURATION_MS);
       }
 
       if (thankyouImage) {
