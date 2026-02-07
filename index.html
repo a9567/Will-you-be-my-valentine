@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Will You Be My Valentine?</title>
+  <style>
+    /* ---- Base & reset ---- */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Segoe UI", serif;
+      background: linear-gradient(145deg, #f8b4c4 0%, #fecfef 40%, #fad0c4 70%, #ffd6e0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    #app {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      position: relative;
+    }
+
+    /* ---- Landing screen ---- */
+    .screen-landing {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      padding: 2.25rem 2rem;
+      background: linear-gradient(145deg, rgba(255, 250, 252, 0.98) 0%, rgba(255, 240, 245, 0.95) 100%);
+      border-radius: 1.5rem;
+      box-shadow: 0 16px 48px rgba(194, 24, 91, 0.15), 0 0 0 1px rgba(233, 30, 99, 0.08);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      overflow: hidden;
+    }
+
+    .screen-landing::before {
+      content: "💕";
+      position: absolute;
+      top: 0.75rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.5rem;
+      opacity: 0.7;
+      animation: gentle-pulse 2.5s ease-in-out infinite;
+    }
+
+    .screen-landing.exit {
+      opacity: 0;
+      transform: scale(0.95);
+      pointer-events: none;
+    }
+
+    @keyframes gentle-pulse {
+      0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+      50% { opacity: 0.9; transform: translateX(-50%) scale(1.1); }
+    }
+
+    .screen-landing .landing-svg {
+      display: block;
+      width: 100%;
+      max-width: 140px;
+      height: auto;
+      margin: 0 auto 1rem;
+    }
+
+    .screen-landing .landing-svg svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .screen-landing .landing-intro {
+      margin: 0 0 0.5rem;
+      font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+      text-align: center;
+      color: #ad1457;
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .screen-landing h1 {
+      margin: 0 0 0.25rem;
+      font-size: clamp(1.5rem, 4vw, 1.85rem);
+      text-align: center;
+      color: #880e4f;
+      line-height: 1.35;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .screen-landing .landing-hearts {
+      text-align: center;
+      margin: 0.75rem 0 1.25rem;
+      font-size: 1.25rem;
+      letter-spacing: 0.3em;
+      opacity: 0.85;
+    }
+
+    .screen-landing .landing-note {
+      margin: 1rem 0 0;
+      font-size: 0.8rem;
+      color: #ad1457;
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* Button row: Yes and No on same line; placeholder reserves space for No, overlay positions real No */
+    .buttons-row {
+      position: relative;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0.75rem;
+      justify-content: center;
+      align-items: center;
+      min-height: 3.5rem;
+    }
+
+    .no-btn-placeholder {
+      display: inline-block;
+      min-width: 5rem;
+      min-height: 2.75rem;
+      padding: 0.6rem 1.25rem;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .btn {
+      min-width: 5rem;
+      min-height: 2.75rem;
+      padding: 0.6rem 1.25rem;
+      font-size: 1rem;
+      font-family: inherit;
+      border: none;
+      border-radius: 2rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid #c71585;
+      outline-offset: 2px;
+    }
+
+    .btn-yes {
+      background: linear-gradient(135deg, #c2185b, #e91e63, #f06292);
+      color: white;
+      box-shadow: 0 4px 18px rgba(194, 24, 91, 0.45);
+      font-weight: 600;
+    }
+
+    .btn-yes:hover {
+      transform: scale(1.05);
+      opacity: 0.98;
+      box-shadow: 0 8px 24px rgba(194, 24, 91, 0.5);
+    }
+
+    /* No button wrapper: fills viewport so we can position "No" anywhere on screen */
+    .no-btn-wrapper {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .no-btn-wrapper .btn-no-container {
+      pointer-events: auto;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform: translate(var(--no-x, 50vw), var(--no-y, 50vh)) translate(-50%, -50%);
+      transition: transform 0.15s ease-out;
+    }
+
+    .btn-no {
+      background: rgba(255, 255, 255, 0.95);
+      color: #666;
+      border: 2px solid #e0e0e0;
+      min-height: 2.75rem;
+      min-width: 5rem;
+    }
+
+    .btn-no:hover {
+      border-color: #ccc;
+      background: #f5f5f5;
+    }
+
+    /* Playful animation when "No" moves: bounce (position from --no-x/--no-y) */
+    .btn-no-container.no-move {
+      animation: no-bounce 0.4s ease;
+    }
+
+    @keyframes no-bounce {
+      0%, 100% { transform: translate(var(--no-x), var(--no-y)) translate(-50%, -50%) scale(1); }
+      30% { transform: translate(var(--no-x), var(--no-y)) translate(-50%, -50%) scale(1.15); }
+      60% { transform: translate(var(--no-x), var(--no-y)) translate(-50%, -50%) scale(0.95); }
+    }
+
+    /* ---- Gift screen (after Yes) ---- */
+    .screen-gifts {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+      z-index: 5;
+    }
+
+    .screen-gifts.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .screen-gifts .gift-card {
+      background: linear-gradient(145deg, rgba(255, 250, 252, 0.98) 0%, rgba(255, 240, 248, 0.96) 100%);
+      border-radius: 1.5rem;
+      padding: 2.25rem 2rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 56px rgba(194, 24, 91, 0.18), 0 0 0 1px rgba(233, 30, 99, 0.08);
+      opacity: 0;
+      transform: scale(0.96);
+      transition: opacity 0.4s ease 0.1s, transform 0.4s ease 0.1s;
+    }
+
+    .screen-gifts.visible .gift-card {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .screen-gifts .gift-prompt {
+      margin: 0 0 0.35rem;
+      font-size: clamp(1.35rem, 4vw, 1.6rem);
+      color: #880e4f;
+      text-align: center;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .screen-gifts .gift-subline {
+      margin: 0 0 1.75rem;
+      font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+      color: #ad1457;
+      text-align: center;
+      font-style: italic;
+    }
+
+    .gift-boxes {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    .gift-box-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: gift-enter 0.45s ease forwards;
+    }
+
+    .screen-gifts.visible .gift-box-wrap:nth-child(1) { animation-delay: 0.15s; }
+    .screen-gifts.visible .gift-box-wrap:nth-child(2) { animation-delay: 0.25s; }
+    .screen-gifts.visible .gift-box-wrap:nth-child(3) { animation-delay: 0.35s; }
+
+    @keyframes gift-enter {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .gift-box {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(90deg, transparent 46%, rgba(233, 30, 99, 0.85) 46%, rgba(233, 30, 99, 0.85) 54%, transparent 54%), linear-gradient(145deg, #fff0f5 0%, #ffe4ec 100%);
+      border: 2px solid #e91e63;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      position: relative;
+      box-shadow: 0 6px 18px rgba(194, 24, 91, 0.22);
+    }
+
+    .gift-box::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 22px;
+      background: linear-gradient(90deg, #c2185b, #e91e63);
+      transform: translateY(-50%);
+      border-radius: 2px;
+      z-index: 0;
+    }
+
+    .gift-box::after {
+      content: "🎁";
+      font-size: 2.25rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .gift-box-wrap:nth-child(1) .gift-box {
+      border-color: #c2185b;
+      box-shadow: 0 6px 18px rgba(194, 24, 91, 0.25);
+    }
+    .gift-box-wrap:nth-child(1) .gift-box::before { background: linear-gradient(90deg, #880e4f, #c2185b); }
+    .gift-box-wrap:nth-child(2) .gift-box {
+      border-color: #e91e63;
+      box-shadow: 0 6px 18px rgba(233, 30, 99, 0.25);
+    }
+    .gift-box-wrap:nth-child(2) .gift-box::before { background: linear-gradient(90deg, #c2185b, #f06292); }
+    .gift-box-wrap:nth-child(3) .gift-box {
+      border-color: #ad1457;
+      box-shadow: 0 6px 18px rgba(173, 20, 87, 0.25);
+    }
+    .gift-box-wrap:nth-child(3) .gift-box::before { background: linear-gradient(90deg, #ad1457, #e91e63); }
+
+    .gift-box:hover {
+      transform: translateY(-6px) scale(1.05);
+      box-shadow: 0 14px 32px rgba(194, 24, 91, 0.4);
+    }
+
+    .gift-box:focus-visible {
+      outline: 2px solid #c71585;
+      outline-offset: 3px;
+    }
+
+    /* ---- Celebration screen ---- */
+    .screen-celebration {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+      z-index: 10;
+    }
+
+    .screen-celebration.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .screen-celebration .content {
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.35s ease;
+    }
+
+    .screen-celebration.visible .content {
+      transform: scale(1);
+    }
+
+    .screen-celebration .speech-bubble {
+      position: relative;
+      width: fit-content;
+      max-width: 90%;
+      margin: 0 auto 0.75rem;
+      padding: 0.9rem 1.25rem;
+      background: linear-gradient(145deg, #fff5f8 0%, #ffe8ef 100%);
+      border: 2px solid rgba(233, 30, 99, 0.3);
+      border-radius: 1.15rem;
+      box-shadow: 0 3px 16px rgba(194, 24, 91, 0.12);
+    }
+
+    .screen-celebration .speech-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 10px solid transparent;
+      border-top-color: #ffe8ef;
+    }
+
+    .screen-celebration .gift-message-bubble:has(.gift-message:empty) {
+      display: none;
+    }
+
+    .screen-celebration .gift-message {
+      margin: 0;
+      padding: 0;
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      color: #ad1457;
+      font-style: italic;
+      line-height: 1.45;
+    }
+
+    .screen-celebration .gift-message:empty {
+      display: none;
+    }
+
+    .screen-celebration .speech-bubble h2 {
+      margin: 0;
+      font-size: clamp(1.6rem, 5vw, 2.5rem);
+      color: #333;
+    }
+
+    .screen-celebration .thankyou-image {
+      width: 120px;
+      height: 120px;
+      margin: 1rem auto;
+      display: block;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .screen-celebration .speech-bubble .subtext {
+      margin: 0;
+      font-size: clamp(1.05rem, 2.8vw, 1.25rem);
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .screen-celebration .speech-bubble .romantic-line {
+      margin: 0;
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
+      color: #c2185b;
+      font-style: italic;
+    }
+
+    .screen-celebration .select-another-gift {
+      margin: 1.25rem 0 0;
+      padding: 0.5rem 0.75rem;
+      font-size: clamp(0.9rem, 2.2vw, 1.05rem);
+      color: #ad1457;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color 0.2s ease;
+    }
+
+    .screen-celebration .select-another-gift:hover {
+      color: #c2185b;
+    }
+
+    .screen-celebration .select-another-gift:focus-visible {
+      outline: 2px solid #c71585;
+      outline-offset: 2px;
+    }
+
+    /* Container for floating hearts (positioned behind text) */
+    .hearts-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .heart-float {
+      position: absolute;
+      font-size: 1.25rem;
+      opacity: 0;
+      animation: float-up 4s ease-in forwards;
+    }
+
+    @keyframes float-up {
+      0% {
+        opacity: 0.9;
+        transform: translateY(0) translateX(0) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100vh) translateX(var(--drift, 0)) rotate(360deg);
+      }
+    }
+
+    /* Confetti blasts (left and right) after Yes click */
+    .confetti-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 3;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      border-radius: 2px;
+      opacity: 0;
+      animation-duration: 1.5s;
+      animation-timing-function: ease-out;
+      animation-fill-mode: forwards;
+    }
+
+    .confetti-piece.confetti-burst-left {
+      left: -10px;
+      animation-name: confetti-burst-left;
+    }
+
+    .confetti-piece.confetti-burst-right {
+      right: -10px;
+      animation-name: confetti-burst-right;
+    }
+
+    @keyframes confetti-burst-left {
+      0% {
+        opacity: 1;
+        transform: translateX(0) translateY(var(--drift-y, 0)) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(110vw) translateY(var(--drift-y, 0)) rotate(var(--rotate, 360deg));
+      }
+    }
+
+    @keyframes confetti-burst-right {
+      0% {
+        opacity: 1;
+        transform: translateX(0) translateY(var(--drift-y, 0)) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(-110vw) translateY(var(--drift-y, 0)) rotate(var(--rotate, -360deg));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Landing: card + Yes button; No button lives in fixed wrapper for movement -->
+    <main class="screen-landing" id="landing" aria-hidden="false">
+      <div class="landing-svg" aria-hidden="true">
+        <svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg" width="800" height="800">
+          <g transform="matrix(1.3333333,0,0,-1.3333333,0,800)">
+            <g>
+              <g>
+                <g transform="translate(548.0127,141.5029)">
+                  <path d="m 0,0 c 0,0.24 -0.193,3.178 -8.468,7.323 0.85,-1.1 1.294,-2.219 1.294,-3.35 0,-17.495 -103.887,-31.677 -232.038,-31.677 -128.152,0 -232.039,14.182 -232.039,31.677 0,1.131 0.445,2.25 1.294,3.35 -8.274,-4.145 -8.468,-7.083 -8.468,-7.323 0,-0.485 0.772,-12.023 67.799,-22.268 45.753,-6.993 106.63,-10.843 171.414,-10.843 64.783,0 125.658,3.85 171.412,10.843 C -0.771,-12.023 0,-0.485 0,0 m 8.144,0 c 0,-7.014 -7.133,-13 -21.807,-18.303 -12.502,-4.517 -30.303,-8.561 -52.906,-12.015 -46.147,-7.053 -107.46,-10.938 -172.643,-10.938 -65.183,0 -126.496,3.885 -172.643,10.938 -22.604,3.454 -40.405,7.498 -52.907,12.015 -14.674,5.303 -21.806,11.289 -21.806,18.303 0,7.014 7.132,13.001 21.806,18.303 12.503,4.518 30.303,8.56 52.907,12.014 3.189,0.489 6.459,0.959 9.79,1.416 0.737,-0.969 1.499,-1.933 2.293,-2.886 -20.848,-3.519 -36.478,-7.846 -44.076,-12.886 -3.334,-2.212 -5.133,-4.56 -5.133,-7.035 0,-19.143 106.657,-30.581 209.769,-30.581 103.112,0 209.767,11.438 209.767,30.581 0,2.475 -1.8,4.823 -5.133,7.036 -8.507,5.642 -27.088,10.392 -51.777,14.112 0.714,0.896 1.412,1.796 2.077,2.701 6.117,-0.769 12.029,-1.588 17.709,-2.457 22.603,-3.455 40.404,-7.497 52.906,-12.015 C 1.011,13.001 8.144,7.014 8.144,0" fill="#b8547a" fill-opacity="1" fill-rule="nonzero" stroke="none"/>
+                </g>
+                <g transform="translate(330.2666,363.4331)">
+                  <path d="m 0,0 c -0.5,-1.771 -1.598,-3.011 -2.45,-2.77 -0.853,0.24 -1.138,1.872 -0.637,3.643 0.5,1.771 1.597,3.01 2.45,2.769 C 0.216,3.401 0.501,1.77 0,0 m 136.155,-109.419 c -1.842,-0.208 -3.606,-0.833 -5.295,-1.61 -1.68,-0.81 -3.319,-1.737 -4.884,-2.806 -1.582,-1.042 -3.131,-2.152 -4.658,-3.311 -3.088,-2.268 -6.105,-4.701 -9.396,-6.832 -1.642,-1.067 -3.362,-2.059 -5.227,-2.784 -0.925,-0.369 -1.918,-0.613 -2.913,-0.733 -1.009,-0.074 -2.033,0.055 -2.916,0.476 0.963,-0.198 1.909,-0.098 2.809,0.127 0.892,0.291 1.757,0.626 2.566,1.115 1.646,0.903 3.168,2.049 4.682,3.208 3.005,2.359 5.952,4.857 9.068,7.203 3.142,2.292 6.426,4.549 10.204,5.938 1.876,0.694 3.889,1.141 5.916,1.098 2.022,-0.051 4.031,-0.655 5.607,-1.812 -1.814,0.721 -3.725,0.962 -5.563,0.723 m -25.987,-4.63 c 0.892,0.587 1.713,1.305 2.544,2.021 1.648,1.449 3.276,2.986 5.064,4.395 1.784,1.402 3.713,2.735 5.956,3.571 1.114,0.416 2.326,0.672 3.542,0.629 1.211,-0.06 2.409,-0.449 3.293,-1.19 -2.243,0.631 -4.292,-0.024 -6.127,-1.022 -1.852,-1.009 -3.55,-2.38 -5.287,-3.731 -1.731,-1.366 -3.48,-2.781 -5.405,-4.034 -0.96,-0.625 -1.981,-1.197 -3.099,-1.612 -0.554,-0.202 -1.153,-0.341 -1.75,-0.393 -0.607,-0.028 -1.22,0.077 -1.723,0.355 1.156,-0.088 2.109,0.412 2.992,1.011 m -0.35,8.657 c 0.695,0.487 1.335,1.081 1.991,1.663 1.299,1.186 2.596,2.435 4.04,3.571 1.438,1.131 3.012,2.2 4.854,2.856 0.914,0.327 1.913,0.515 2.91,0.458 0.993,-0.075 1.967,-0.425 2.656,-1.063 -1.844,0.42 -3.414,-0.162 -4.858,-0.977 -1.451,-0.828 -2.795,-1.934 -4.186,-3.016 -1.386,-1.096 -2.803,-2.221 -4.38,-3.208 -0.785,-0.497 -1.626,-0.942 -2.547,-1.257 -0.456,-0.151 -0.949,-0.256 -1.442,-0.28 -0.499,-0.009 -1.002,0.098 -1.398,0.345 0.941,-0.023 1.669,0.404 2.36,0.908 m 136.938,33.932 c -3.98,0 -50.818,-14.961 -50.818,-14.961 0,0 20.639,17.955 19.528,18.973 -0.031,0.029 -0.098,0.041 -0.197,0.041 -3.451,0 -46.644,-16.633 -46.644,-16.633 0,0 16.783,11.953 16.376,14.195 -0.025,0.144 -0.238,0.213 -0.614,0.213 -5.431,0 -44.786,-14.174 -44.786,-14.174 0,0 18.084,11.389 17.838,12.502 -0.01,0.042 -0.123,0.065 -0.333,0.065 -4.809,0 -60.717,-11.682 -102.878,-53.707 l 0.203,-0.185 c -5.726,-6.101 -9.871,-13.759 -12.568,-21.829 -2.666,-8.077 -3.993,-16.727 -3.155,-25.154 0.455,-4.186 1.468,-8.345 3.457,-11.956 1.954,-3.607 4.999,-6.57 8.812,-7.996 1.881,-0.703 3.963,-1.117 5.97,-1.147 1.971,-0.047 3.95,0.503 5.818,1.36 3.753,1.741 7.021,4.651 10.028,7.717 5.982,6.247 11.093,13.393 16.244,20.462 5.136,7.091 10.229,14.253 15.809,21.047 5.589,6.752 11.639,13.291 18.959,18.237 3.66,2.44 7.664,4.425 11.937,5.507 4.276,1.069 8.776,1.12 13.059,0.194 -4.304,0.838 -8.778,0.691 -12.991,-0.452 -4.214,-1.158 -8.132,-3.202 -11.705,-5.689 -7.142,-5.04 -13.009,-11.641 -18.429,-18.465 -5.409,-6.866 -10.338,-14.103 -15.334,-21.305 -5.018,-7.183 -9.985,-14.455 -16.005,-21.007 -3.045,-3.219 -6.36,-6.353 -10.546,-8.413 -2.082,-1.009 -4.413,-1.728 -6.842,-1.726 -2.374,-0.008 -4.66,0.396 -6.901,1.169 -2.219,0.798 -4.299,2.021 -6.069,3.591 -1.771,1.568 -3.236,3.442 -4.401,5.454 -2.338,4.041 -3.521,8.552 -4.116,13.039 -0.561,4.505 -0.516,9.044 -0.02,13.518 0.493,4.473 1.422,8.89 2.751,13.191 1.575,5.072 3.694,10.013 6.417,14.63 4.383,10.463 23.407,33.543 42.121,81.937 25.915,67.003 -19.62,89.299 -45.285,93.499 -3.751,0.614 -7.359,0.895 -10.819,0.895 -23.866,0 -40.536,-13.374 -45.83,-23.148 -5.884,-10.865 -9.957,-24.233 0.759,-32.766 0.403,0.129 0.81,0.249 1.229,0.329 1.501,0.389 3.058,0.544 4.593,0.572 1.541,0.025 3.063,-0.161 4.558,-0.337 0.747,-0.082 1.499,-0.165 2.225,-0.044 0.734,0.098 1.377,0.566 1.762,1.227 -0.323,-0.685 -0.954,-1.24 -1.722,-1.408 -0.756,-0.191 -1.535,-0.166 -2.29,-0.146 -1.516,0.056 -3.016,0.116 -4.496,-0.032 -1.477,-0.149 -2.937,-0.414 -4.331,-0.901 -0.126,-0.036 -0.246,-0.089 -0.369,-0.131 11.776,-8.443 8.822,-16.667 7.585,-24.278 5.524,1.676 10.302,17.754 7.732,27.527 8.195,6.682 12.021,28.261 21.508,29.906 1.863,0.323 4.031,0.513 6.382,0.513 13.396,0 32.754,-6.196 35.709,-29.446 7.405,-58.243 -68.366,-103.168 -84.96,-138.29 0,0 -21.619,-35.082 -1.91,-57.869 17.179,-19.864 39.203,-27.7 61.439,-27.7 38.696,0 78.029,23.739 93.547,49.129 24.432,39.982 113.277,109.116 113.277,110.565 0,0.059 -0.091,0.091 -0.268,0.091 m -434.64,-38.556 c 1.988,0.117 3.983,-0.226 5.857,-0.824 3.776,-1.193 7.103,-3.274 10.282,-5.401 3.156,-2.182 6.145,-4.524 9.183,-6.727 1.531,-1.081 3.07,-2.147 4.719,-2.971 0.815,-0.452 1.677,-0.744 2.563,-1.007 0.893,-0.191 1.823,-0.264 2.77,-0.073 -0.866,-0.414 -1.863,-0.568 -2.858,-0.532 -0.979,0.088 -1.965,0.285 -2.887,0.609 -1.862,0.637 -3.594,1.542 -5.248,2.526 -3.32,1.964 -6.375,4.24 -9.496,6.344 -1.544,1.075 -3.109,2.104 -4.706,3.057 -1.582,0.98 -3.227,1.83 -4.913,2.546 -1.693,0.688 -3.451,1.221 -5.271,1.362 -1.819,0.171 -3.688,-0.11 -5.472,-0.813 1.547,1.139 3.494,1.776 5.477,1.904 m 7.58,6.852 c 1.35,0.093 2.711,-0.13 3.98,-0.536 2.559,-0.807 4.773,-2.236 6.868,-3.696 2.072,-1.507 4.012,-3.116 5.951,-4.662 0.981,-0.755 1.954,-1.509 3.002,-2.111 1.039,-0.621 2.163,-1.097 3.456,-0.963 -0.571,-0.297 -1.247,-0.424 -1.924,-0.41 -0.666,0.042 -1.339,0.172 -1.965,0.379 -1.265,0.418 -2.435,1.017 -3.542,1.678 -2.224,1.314 -4.232,2.857 -6.27,4.284 -1.001,0.739 -2.017,1.44 -3.048,2.096 -1.015,0.682 -2.075,1.267 -3.151,1.787 -2.15,1.004 -4.539,1.565 -7.029,0.793 1.012,0.803 2.326,1.255 3.672,1.361 m 5.884,6.399 c 0.996,0.057 1.995,-0.132 2.911,-0.457 1.842,-0.658 3.416,-1.727 4.857,-2.86 1.443,-1.136 2.74,-2.384 4.041,-3.572 0.655,-0.582 1.296,-1.174 1.991,-1.664 0.69,-0.501 1.419,-0.929 2.361,-0.907 -0.397,-0.246 -0.899,-0.352 -1.399,-0.345 -0.49,0.026 -0.986,0.129 -1.442,0.28 -0.921,0.317 -1.764,0.762 -2.549,1.256 -1.575,0.99 -2.994,2.116 -4.38,3.212 -1.393,1.081 -2.737,2.187 -4.189,3.017 -1.444,0.815 -3.012,1.396 -4.858,0.976 0.688,0.639 1.661,0.989 2.656,1.064 M -51.006,3.642 c 0.852,0.241 1.949,-0.998 2.45,-2.769 0.501,-1.771 0.217,-3.403 -0.637,-3.643 -0.853,-0.241 -1.949,0.999 -2.451,2.77 -0.5,1.77 -0.214,3.401 0.638,3.642 m 19.743,-168.799 c 1.025,4.047 2.327,7.742 3.614,10.893 -1.912,6.113 -3.656,10.2 -3.656,10.2 -18.775,42.479 -93.374,78.435 -85.969,136.678 2.955,23.25 22.313,29.446 35.709,29.446 2.351,0 4.519,-0.19 6.381,-0.513 9.489,-1.645 13.313,-23.224 21.509,-29.906 -2.569,-9.773 2.207,-25.851 7.733,-27.527 -1.238,7.611 -4.193,15.835 7.584,24.278 -0.123,0.042 -0.243,0.095 -0.37,0.131 -1.394,0.487 -2.854,0.752 -4.33,0.901 -1.482,0.148 -2.979,0.088 -4.496,0.032 -0.755,-0.02 -1.534,-0.045 -2.29,0.146 -0.769,0.168 -1.399,0.723 -1.722,1.408 0.384,-0.661 1.028,-1.129 1.762,-1.227 0.726,-0.121 1.478,-0.038 2.225,0.044 1.494,0.176 3.017,0.362 4.558,0.337 1.535,-0.028 3.092,-0.183 4.593,-0.572 0.421,-0.08 0.826,-0.2 1.229,-0.329 10.719,8.533 6.645,21.901 0.76,32.766 -5.295,9.774 -21.966,23.147 -45.831,23.148 -3.46,0 -7.069,-0.281 -10.819,-0.895 -25.666,-4.2 -71.201,-26.496 -45.287,-93.499 18.716,-48.394 37.74,-71.475 42.123,-81.937 2.723,-4.617 4.842,-9.558 6.417,-14.63 1.328,-4.301 2.257,-8.718 2.751,-13.191 0.495,-4.474 0.541,-9.013 -0.021,-13.518 -0.595,-4.487 -1.777,-8.998 -4.115,-13.039 -1.166,-2.012 -2.631,-3.886 -4.402,-5.454 -1.77,-1.57 -3.851,-2.793 -6.069,-3.591 -2.241,-0.773 -4.527,-1.177 -6.9,-1.169 -2.428,-0.002 -4.761,0.717 -6.842,1.726 -4.186,2.06 -7.502,5.194 -10.546,8.413 -6.02,6.552 -10.987,13.824 -16.006,21.007 -4.995,7.202 -9.924,14.439 -15.333,21.305 -5.42,6.824 -11.287,13.425 -18.43,18.465 -3.572,2.487 -7.49,4.531 -11.704,5.689 -4.214,1.143 -8.687,1.29 -12.992,0.452 4.285,0.926 8.785,0.875 13.059,-0.194 4.273,-1.082 8.278,-3.067 11.938,-5.507 7.319,-4.946 13.369,-11.485 18.959,-18.237 5.58,-6.794 10.672,-13.956 15.808,-21.047 5.151,-7.069 10.262,-14.215 16.246,-20.462 3.005,-3.066 6.274,-5.976 10.028,-7.717 1.865,-0.857 3.846,-1.407 5.816,-1.36 2.007,0.03 4.089,0.444 5.971,1.147 3.813,1.426 6.857,4.389 8.812,7.996 1.989,3.611 3.001,7.77 3.459,11.956 0.836,8.427 -0.491,17.077 -3.158,25.154 -2.696,8.07 -6.842,15.728 -12.567,21.829 l 0.202,0.185 c -42.16,42.025 -98.068,53.704 -102.877,53.707 -0.211,0 -0.324,-0.023 -0.333,-0.065 -0.247,-1.113 17.837,-12.502 17.837,-12.502 0,0 -39.354,14.173 -44.784,14.174 -0.377,0 -0.59,-0.069 -0.616,-0.213 -0.406,-2.242 16.377,-14.195 16.377,-14.195 0,0 -43.194,16.632 -46.644,16.633 -0.1,0 -0.166,-0.012 -0.196,-0.041 -1.111,-1.018 19.527,-18.973 19.527,-18.973 0,0 -46.838,14.961 -50.817,14.961 -0.178,0 -0.269,-0.032 -0.269,-0.091 0,-1.449 88.846,-70.583 113.276,-110.565 15.431,-25.248 51.865,-46.368 90.084,-46.368 22.299,0 45.203,7.188 64.905,24.939 0.968,0.874 1.81,1.843 2.572,2.87 -5.709,9.618 -6.919,21.75 -3.433,35.518" fill="#6d2c4a" fill-opacity="1" fill-rule="nonzero" stroke="none"/>
+              </g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <p class="landing-intro">You make every day brighter...</p>
+      <h1>Will you be my Valentine Renuma? 💖</h1>
+      <p class="landing-hearts" aria-hidden="true">♥ ♥ ♥</p>
+      <div class="buttons-row">
+        <button type="button" class="btn btn-yes" id="btn-yes">Yes</button>
+        <span id="no-placeholder" class="no-btn-placeholder">No</span>
+      </div>
+      <p class="landing-note">No is not an option Renuma</p>
+    </main>
+
+    <!-- No button: in a full-viewport wrapper so it can be moved anywhere on screen -->
+    <div class="no-btn-wrapper" id="no-wrapper" aria-hidden="false">
+      <div class="btn-no-container" id="no-container">
+        <button type="button" class="btn btn-no" id="btn-no">No</button>
+      </div>
+    </div>
+
+    <div id="confetti-container" class="confetti-container" aria-hidden="true"></div>
+
+    <!-- Gift screen: shown after Yes, three boxes; click one → message + thank you -->
+    <section class="screen-gifts" id="gifts" aria-hidden="true">
+      <div class="gift-card">
+        <p class="gift-prompt">Pick a gift 💝</p>
+        <p class="gift-subline">Each one holds something special for you</p>
+        <div class="gift-boxes">
+          <div class="gift-box-wrap">
+            <button type="button" class="gift-box" data-index="0" aria-label="Choose a gift"> </button>
+          </div>
+          <div class="gift-box-wrap">
+            <button type="button" class="gift-box" data-index="1" aria-label="Choose a gift"> </button>
+          </div>
+          <div class="gift-box-wrap">
+            <button type="button" class="gift-box" data-index="2" aria-label="Choose a gift"> </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Celebration: shown after a gift is picked; shows message + thank you -->
+    <section class="screen-celebration" id="celebration" aria-live="polite" aria-hidden="true">
+      <div class="hearts-container" id="hearts-container"></div>
+      <div class="content">
+        <div class="speech-bubble gift-message-bubble">
+          <p class="gift-message" id="gift-message"></p>
+        </div>
+        <div class="speech-bubble">
+          <h2>Happy Valentines day Renuma ❤️</h2>
+        </div>
+        <img id="thankyou-image" src="v1.avif" alt="" class="thankyou-image" aria-hidden="true">
+        <div class="speech-bubble">
+          <p class="subtext">You just made my day!</p>
+        </div>
+        <div class="speech-bubble">
+          <p class="romantic-line">I'm the luckiest person to have you.</p>
+        </div>
+        <div class="speech-bubble">
+          <p class="romantic-line">You mean everything to me.</p>
+        </div>
+        <button type="button" id="select-another-gift" class="select-another-gift">♥ Select another gift</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var MARGIN = 12;
+      var HEARTS = ["♥", "❤", "💕", "💖", "💗"];
+
+      var landing = document.getElementById("landing");
+      var btnYes = document.getElementById("btn-yes");
+      var btnNo = document.getElementById("btn-no");
+      var noContainer = document.getElementById("no-container");
+      var noWrapper = document.getElementById("no-wrapper");
+      var giftsScreen = document.getElementById("gifts");
+      var celebration = document.getElementById("celebration");
+      var heartsContainer = document.getElementById("hearts-container");
+      var giftMessageEl = document.getElementById("gift-message");
+      var noPlaceholder = document.getElementById("no-placeholder");
+      var thankyouImage = document.getElementById("thankyou-image");
+      var confettiContainer = document.getElementById("confetti-container");
+
+      var CONFETTI_COLORS = ["#e91e63", "#c2185b", "#f06292", "#ad1457", "#ffb74d", "#fff", "#ffebee"];
+      var CONFETTI_COUNT_PER_SIDE = 28;
+
+      function startConfettiBlasts() {
+        if (!confettiContainer) return;
+        confettiContainer.innerHTML = "";
+        var vh = window.innerHeight || 300;
+        var i, el, topPct, color, size, duration, delay, driftY, rotate;
+        for (i = 0; i < CONFETTI_COUNT_PER_SIDE; i++) {
+          el = document.createElement("span");
+          el.className = "confetti-piece confetti-burst-left";
+          topPct = 15 + Math.random() * 70;
+          el.style.top = topPct + "%";
+          color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+          el.style.backgroundColor = color;
+          size = 6 + Math.floor(Math.random() * 8);
+          el.style.width = size + "px";
+          el.style.height = size + "px";
+          duration = 1.2 + Math.random() * 0.6;
+          el.style.animationDuration = duration + "s";
+          el.style.animationDelay = Math.random() * 0.15 + "s";
+          driftY = (Math.random() - 0.5) * 80;
+          rotate = (Math.random() - 0.5) * 720;
+          el.style.setProperty("--drift-y", driftY + "px");
+          el.style.setProperty("--rotate", rotate + "deg");
+          confettiContainer.appendChild(el);
+          el.addEventListener("animationend", function () { this.remove(); });
+        }
+        for (i = 0; i < CONFETTI_COUNT_PER_SIDE; i++) {
+          el = document.createElement("span");
+          el.className = "confetti-piece confetti-burst-right";
+          topPct = 15 + Math.random() * 70;
+          el.style.top = topPct + "%";
+          color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+          el.style.backgroundColor = color;
+          size = 6 + Math.floor(Math.random() * 8);
+          el.style.width = size + "px";
+          el.style.height = size + "px";
+          duration = 1.2 + Math.random() * 0.6;
+          el.style.animationDuration = duration + "s";
+          el.style.animationDelay = Math.random() * 0.15 + "s";
+          driftY = (Math.random() - 0.5) * 80;
+          rotate = (Math.random() - 0.5) * 720;
+          el.style.setProperty("--drift-y", driftY + "px");
+          el.style.setProperty("--rotate", rotate + "deg");
+          confettiContainer.appendChild(el);
+          el.addEventListener("animationend", function () { this.remove(); });
+        }
+      }
+
+      var GIFT_MESSAGES = [
+        "Sneham mathram (most recommended)",
+        "How far will you go for love",
+        "Eat 5-star do nothing."
+      ];
+
+      // ----- No button: random movement (never off-screen) -----
+      // Random position logic: use getBoundingClientRect() for button size and
+      // window innerWidth/innerHeight (or visualViewport for mobile browser chrome)
+      // for viewport size. Safe range keeps button center inside [margin + halfWidth,
+      // viewport - margin - halfWidth] so the button never goes off-screen. Position
+      // is set via CSS custom properties --no-x, --no-y and transform translate so
+      // the bounce keyframe animation can reuse the same values.
+
+      function getViewportSize() {
+        var vw = window.innerWidth || document.documentElement.clientWidth || 300;
+        var vh = window.innerHeight || document.documentElement.clientHeight || 300;
+        if (window.visualViewport) {
+          vw = window.visualViewport.width;
+          vh = window.visualViewport.height;
+        }
+        return { w: vw, h: vh };
+      }
+
+      function moveNoButton() {
+        var rect = btnNo.getBoundingClientRect();
+        var vp = getViewportSize();
+        var bw = rect.width;
+        var bh = rect.height;
+        var minX = bw / 2 + MARGIN;
+        var maxX = Math.max(minX, vp.w - bw / 2 - MARGIN);
+        var minY = bh / 2 + MARGIN;
+        var maxY = Math.max(minY, vp.h - bh / 2 - MARGIN);
+        var x = minX + Math.random() * (maxX - minX);
+        var y = minY + Math.random() * (maxY - minY);
+        noContainer.style.setProperty("--no-x", x + "px");
+        noContainer.style.setProperty("--no-y", y + "px");
+        noContainer.style.transform = "translate(" + x + "px, " + y + "px) translate(-50%, -50%)";
+        noContainer.classList.remove("no-move");
+        noContainer.offsetHeight;
+        noContainer.classList.add("no-move");
+      }
+
+      function onNoMoveAnimationEnd(e) {
+        if (e.target === noContainer && e.animationName === "no-bounce") {
+          noContainer.classList.remove("no-move");
+        }
+      }
+
+      noContainer.addEventListener("animationend", onNoMoveAnimationEnd);
+      btnNo.addEventListener("mouseenter", moveNoButton);
+      btnNo.addEventListener("touchstart", function (e) { moveNoButton(); }, { passive: true });
+      btnNo.addEventListener("click", function (e) {
+        e.preventDefault();
+        moveNoButton();
+      });
+
+      // Initial position for "No": same line as Yes, over the placeholder
+      function initNoPosition() {
+        if (noPlaceholder && noPlaceholder.getBoundingClientRect) {
+          var r = noPlaceholder.getBoundingClientRect();
+          var x = r.left + r.width / 2;
+          var y = r.top + r.height / 2;
+          noContainer.style.setProperty("--no-x", x + "px");
+          noContainer.style.setProperty("--no-y", y + "px");
+          noContainer.style.transform = "translate(" + x + "px, " + y + "px) translate(-50%, -50%)";
+        } else {
+          var vp = getViewportSize();
+          var x = vp.w / 2;
+          var y = vp.h / 2;
+          noContainer.style.setProperty("--no-x", x + "px");
+          noContainer.style.setProperty("--no-y", y + "px");
+          noContainer.style.transform = "translate(" + x + "px, " + y + "px) translate(-50%, -50%)";
+        }
+      }
+      initNoPosition();
+      window.addEventListener("resize", initNoPosition);
+      window.addEventListener("load", initNoPosition);
+      requestAnimationFrame(function () { requestAnimationFrame(initNoPosition); });
+
+      // ----- Yes button: transition to gift screen -----
+      // On Yes: hide landing and No, show gift screen. On gift click: set message, show celebration + hearts.
+
+      function showGiftScreen() {
+        startConfettiBlasts();
+        landing.classList.add("exit");
+        landing.addEventListener("transitionend", function onExit() {
+          landing.removeEventListener("transitionend", onExit);
+          landing.style.display = "none";
+          noWrapper.style.display = "none";
+          landing.setAttribute("aria-hidden", "true");
+          noWrapper.setAttribute("aria-hidden", "true");
+          giftsScreen.classList.add("visible");
+          giftsScreen.setAttribute("aria-hidden", "false");
+        }, { once: true });
+      }
+
+      function showCelebrationWithMessage(message) {
+        if (giftMessageEl) giftMessageEl.textContent = message;
+        giftsScreen.classList.remove("visible");
+        giftsScreen.setAttribute("aria-hidden", "true");
+        celebration.classList.add("visible");
+        celebration.setAttribute("aria-hidden", "false");
+        startHearts();
+      }
+
+      btnYes.addEventListener("click", showGiftScreen);
+
+      [].forEach.call(document.querySelectorAll(".gift-box"), function (box) {
+        box.addEventListener("click", function () {
+          var idx = parseInt(box.getAttribute("data-index"), 10);
+          var msg = GIFT_MESSAGES[idx];
+          if (msg) showCelebrationWithMessage(msg);
+        });
+      });
+
+      var selectAnotherGiftBtn = document.getElementById("select-another-gift");
+      if (selectAnotherGiftBtn) {
+        selectAnotherGiftBtn.addEventListener("click", function () {
+          celebration.classList.remove("visible");
+          celebration.setAttribute("aria-hidden", "true");
+          if (giftMessageEl) giftMessageEl.textContent = "";
+          giftsScreen.classList.add("visible");
+          giftsScreen.setAttribute("aria-hidden", "false");
+        });
+      }
+
+      // ----- Celebration: floating hearts -----
+      // Run hearts for ~10s: spawn a batch every 0.5s, then stop. Click on image
+      // restarts the same 10s flow. Each batch adds several hearts with random
+      // position, delay, and drift; float-up keyframe moves them up and fades out.
+
+      var HEARTS_DURATION_MS = 10000;
+      var HEARTS_INTERVAL_MS = 500;
+      var HEARTS_PER_BATCH = 6;
+      var heartsIntervalId = null;
+
+      function addHeartBatch() {
+        var vw = window.innerWidth || 300;
+        var vh = window.innerHeight || 300;
+        for (var i = 0; i < HEARTS_PER_BATCH; i++) {
+          var el = document.createElement("span");
+          el.className = "heart-float";
+          el.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
+          el.style.left = Math.random() * vw + "px";
+          el.style.top = vh + Math.random() * 100 + "px";
+          el.style.animationDelay = Math.random() * 2 + "s";
+          var drift = (Math.random() - 0.5) * 80;
+          el.style.setProperty("--drift", drift + "px");
+          el.style.fontSize = (14 + Math.random() * 12) + "px";
+          heartsContainer.appendChild(el);
+        }
+      }
+
+      function startHearts() {
+        if (heartsIntervalId !== null) {
+          clearInterval(heartsIntervalId);
+          heartsIntervalId = null;
+        }
+        heartsContainer.innerHTML = "";
+        addHeartBatch();
+        heartsIntervalId = setInterval(addHeartBatch, HEARTS_INTERVAL_MS);
+        setTimeout(function () {
+          if (heartsIntervalId !== null) {
+            clearInterval(heartsIntervalId);
+            heartsIntervalId = null;
+          }
+        }, HEARTS_DURATION_MS);
+      }
+
+      if (thankyouImage) {
+        thankyouImage.addEventListener("click", startHearts);
+      }
+    })();
+  </script>
+</body>
+</html>
